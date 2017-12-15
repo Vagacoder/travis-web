@@ -42,6 +42,11 @@ export default Service.extend({
         options.headers['Authorization'] = `token ${token}`;
       }
     }
+
+    if (window.localStorage['apiTrace']) {
+      hash.headers['Trace'] = 'true';
+    }
+
     options.url = url = `${endpoint}${url}`;
     options.method = method;
     options.dataType = options.dataType || 'json';
@@ -54,6 +59,16 @@ export default Service.extend({
       return errorCallback.call(this, data, status, xhr);
     };
 
-    return jQuery.ajax(url, options);
+    return jQuery.ajax(url, options).then((data, _, jqXHR) => {
+      if (window.localStorage['apiTrace']) {
+        let requestId = jqXHR.getResponseHeader('x-request-id');
+        if (config.apiTraceEndpoint) {
+          requestId = `${config.apiTraceEndpoint}${requestId}`;
+        }
+        // eslint-disable-next-line
+        console.log(`${options.method} ${options.url} ${jqXHR.status} ${requestId}`);
+      }
+      return data;
+    });
   }
 });
